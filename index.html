@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kedai Pasar Segandoel - POS Kasir</title>
+
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-100 font-sans antialiased">
+  <div class="flex h-screen overflow-hidden">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-slate-900 text-white flex flex-col justify-between p-4">
+      <div>
+        <div class="flex items-center space-x-3 mb-8 px-2">
+          <div class="p-2 bg-amber-500 rounded-lg text-slate-900 font-bold">
+            <i data-lucide="coffee"></i>
+          </div>
+          <div>
+            <h1 class="font-bold text-lg leading-tight" id="sidebar-nama-kedai">Kedai Pasar Segandoel</h1>
+            <p class="text-xs text-slate-400">Kasir WebApp v1.0</p>
+          </div>
+        </div>
+
+        <nav class="space-y-1">
+          <button onclick="switchTab('pos')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition bg-slate-800 text-amber-400" id="btn-pos">
+            <i data-lucide="shopping-cart" class="w-5 h-5"></i><span>POS Kasir</span>
+          </button>
+          <button onclick="switchTab('katalog')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition" id="btn-katalog">
+            <i data-lucide="package" class="w-5 h-5"></i><span>Katalog Produk</span>
+          </button>
+          <button onclick="switchTab('laporan')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition" id="btn-laporan">
+            <i data-lucide="bar-chart-3" class="w-5 h-5"></i><span>Laporan & Margin</span>
+          </button>
+          <button onclick="switchTab('user')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition" id="btn-user">
+            <i data-lucide="users" class="w-5 h-5"></i><span>Manajemen User</span>
+          </button>
+          <button onclick="switchTab('pengaturan')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition" id="btn-pengaturan">
+            <i data-lucide="settings" class="w-5 h-5"></i><span>Profil & Pengaturan</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="text-xs text-slate-500 border-t border-slate-800 pt-4 px-2">
+        Connected to Cloud Apps Script API
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 overflow-y-auto p-6 bg-slate-50">
+
+      <!-- SECTION 1: POS KASIR -->
+      <section id="sec-pos" class="tab-content grid grid-cols-12 gap-6">
+        <!-- Katalog Menu -->
+        <div class="col-span-8 bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-slate-800">Menu Produk</h2>
+            <input type="text" id="search-pos" onkeyup="filterPOSMenu()" placeholder="Cari produk..." class="px-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-amber-500">
+          </div>
+          <div class="grid grid-cols-3 gap-4" id="pos-menu-list">
+            <!-- Render Produk via JS -->
+          </div>
+        </div>
+
+        <!-- Panel Pesanan / Struk -->
+        <div class="col-span-4 bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800 mb-4">Detail Pesanan</h2>
+            
+            <div class="space-y-3 mb-4">
+              <input type="text" id="cust-nama" placeholder="Nama Pelanggan" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+              <input type="text" id="cust-wa" placeholder="No. WhatsApp (Contoh: 08123456789)" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+            </div>
+
+            <!-- List Cart -->
+            <div class="border-t border-b py-3 max-h-48 overflow-y-auto space-y-2" id="cart-list">
+              <p class="text-slate-400 text-sm text-center py-4">Belum ada pesanan terpilih.</p>
+            </div>
+
+            <!-- Pembayaran Calculation -->
+            <div class="mt-4 space-y-2 text-sm">
+              <div class="flex justify-between text-slate-600"><span>Subtotal</span><span id="txt-subtotal">Rp 0</span></div>
+              <div class="flex justify-between items-center text-slate-600">
+                <span>Diskon</span>
+                <input type="number" id="input-diskon" value="0" oninput="calculateTotal()" class="w-20 text-right px-2 py-1 border rounded text-sm">
+              </div>
+              <div class="flex justify-between text-lg font-bold text-slate-900 border-t pt-2"><span>Total Akhir</span><span id="txt-total">Rp 0</span></div>
+            </div>
+
+            <!-- Metode Pembayaran & Uang -->
+            <div class="mt-4 space-y-3">
+              <label class="text-xs font-semibold text-slate-500 uppercase">Metode Pembayaran</label>
+              <select id="metode-bayar" class="w-full p-2 border rounded-lg text-sm">
+                <option value="Tunai">Tunai</option>
+                <option value="QRIS">QRIS</option>
+                <option value="Transfer">Transfer Bank</option>
+              </select>
+
+              <label class="text-xs font-semibold text-slate-500 uppercase">Uang Diterima</label>
+              <div class="grid grid-cols-3 gap-2">
+                <button onclick="setUangPas()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-xs">Uang Pas</button>
+                <button onclick="addUang(10000)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-xs">10k</button>
+                <button onclick="addUang(20000)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-xs">20k</button>
+                <button onclick="addUang(50000)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-xs">50k</button>
+                <button onclick="addUang(100000)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-xs">100k</button>
+              </div>
+              <input type="number" id="uang-diterima" oninput="calculateTotal()" placeholder="Nominal Rp" class="w-full p-2 border rounded-lg text-sm">
+              
+              <div class="flex justify-between text-sm font-bold text-emerald-600 bg-emerald-50 p-2 rounded-lg">
+                <span>Kembalian</span><span id="txt-kembalian">Rp 0</span>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="simpanTransaksi()" class="w-full mt-4 py-3 bg-amber-500 hover:bg-amber-600 font-bold text-slate-900 rounded-lg shadow flex justify-center items-center space-x-2">
+            <i data-lucide="check-circle"></i><span>Bayar & Simpan Transaksi</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- SECTION 2: KATALOG PRODUK -->
+      <section id="sec-katalog" class="tab-content hidden space-y-6">
+        <div class="flex justify-between items-center">
+          <h2 class="text-2xl font-bold text-slate-800">Katalog Produk & Stok</h2>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead class="bg-slate-50 border-b text-slate-600">
+              <tr>
+                <th class="p-3">Foto</th>
+                <th class="p-3">SKU</th>
+                <th class="p-3">Nama Produk</th>
+                <th class="p-3">Kategori</th>
+                <th class="p-3">HPP</th>
+                <th class="p-3">Harga Jual</th>
+                <th class="p-3">Stok</th>
+                <th class="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody id="table-produk-body">
+              <!-- Render Produk Table -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SECTION 3: LAPORAN & MARGIN -->
+      <section id="sec-laporan" class="tab-content hidden space-y-6">
+        <h2 class="text-2xl font-bold text-slate-800">Laporan Keuangan & Margin</h2>
+        
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-3 gap-6">
+          <div class="bg-white p-5 rounded-xl border shadow-sm">
+            <p class="text-xs text-slate-500 font-semibold uppercase">Total Omzet</p>
+            <h3 class="text-2xl font-bold text-slate-900 mt-1" id="rep-omzet">Rp 0</h3>
+          </div>
+          <div class="bg-white p-5 rounded-xl border shadow-sm">
+            <p class="text-xs text-slate-500 font-semibold uppercase">Total Modal (HPP)</p>
+            <h3 class="text-2xl font-bold text-rose-600 mt-1" id="rep-hpp">Rp 0</h3>
+          </div>
+          <div class="bg-white p-5 rounded-xl border shadow-sm">
+            <p class="text-xs text-slate-500 font-semibold uppercase">Laba Bersih (Net Profit)</p>
+            <h3 class="text-2xl font-bold text-emerald-600 mt-1" id="rep-net">Rp 0</h3>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border shadow-sm max-w-md">
+          <h3 class="font-bold text-slate-800 mb-4">Proporsi Metode Pembayaran</h3>
+          <canvas id="chartBayar" height="200"></canvas>
+        </div>
+      </section>
+
+      <!-- SECTION 4: MANAJEMEN USER -->
+      <section id="sec-user" class="tab-content hidden space-y-6">
+        <h2 class="text-2xl font-bold text-slate-800">Manajemen User Kasir</h2>
+        <div class="bg-white rounded-xl shadow-sm border p-4">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead class="bg-slate-50 border-b">
+              <tr>
+                <th class="p-3">ID User</th>
+                <th class="p-3">Username</th>
+                <th class="p-3">Nama Lengkap</th>
+                <th class="p-3">Role</th>
+                <th class="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody id="table-user-body">
+              <!-- Render Users -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SECTION 5: PROFIL & PENGATURAN -->
+      <section id="sec-pengaturan" class="tab-content hidden space-y-6">
+        <h2 class="text-2xl font-bold text-slate-800">Profil & Pengaturan Kedai</h2>
+        <div class="bg-white p-6 rounded-xl border shadow-sm max-w-2xl space-y-4">
+          <div>
+            <label class="text-sm font-medium">Nama Kedai</label>
+            <input type="text" id="cfg-nama" class="w-full p-2 border rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="text-sm font-medium">Slogan / Tagline</label>
+            <input type="text" id="cfg-slogan" class="w-full p-2 border rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="text-sm font-medium">No. Telepon / WA</label>
+            <input type="text" id="cfg-telp" class="w-full p-2 border rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="text-sm font-medium">URL Logo Eksternal</label>
+            <input type="text" id="cfg-logo" class="w-full p-2 border rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="text-sm font-medium">Alamat Lengkap</label>
+            <textarea id="cfg-alamat" class="w-full p-2 border rounded-lg text-sm"></textarea>
+          </div>
+          <div>
+            <label class="text-sm font-medium">Catatan Footer Struk</label>
+            <input type="text" id="cfg-footer" class="w-full p-2 border rounded-lg text-sm">
+          </div>
+          <button onclick="simpanProfilCloud()" class="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 font-bold text-slate-900 rounded-lg text-sm flex items-center space-x-2">
+            <i data-lucide="cloud"></i><span>Simpan Profil ke Cloud</span>
+          </button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- APPLICATION SCRIPT LOGIC -->
+  <script>
+    // URL Web App Google Apps Script Anda yang valid
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzySBCUbAm0XhFKFYgDOJooKhcGleL2lzv-i9Qf6JAUPSYdRnKLQ7RiviQsA3JgoCi7HQ/exec";
+
+    let state = { produk: [], cart: [], user: [], pengaturan: {}, transaksi: [] };
+    let chartInstance = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      fetchData();
+    });
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(el => {
+        el.classList.remove('bg-slate-800', 'text-amber-400');
+      });
+      
+      document.getElementById(`sec-${tabName}`).classList.remove('hidden');
+      document.getElementById(`btn-${tabName}`).classList.add('bg-slate-800', 'text-amber-400');
+    }
+
+    async function fetchData() {
+      try {
+        const res = await fetch(`${GAS_URL}?action=getInitialData`);
+        const json = await res.json();
+        if (json.status === "success") {
+          state.produk = json.data.produk || [];
+          state.user = json.data.user || [];
+          state.pengaturan = json.data.pengaturan || {};
+          state.transaksi = json.data.transaksi || [];
+
+          renderPOSMenu();
+          renderKatalogTable();
+          renderUserTable();
+          loadPengaturanUI();
+          hitungLaporan();
+        }
+      } catch (err) {
+        console.error("Gagal mengambil data dari API Google Sheets:", err);
+      }
+    }
+
+    function renderPOSMenu(items = state.produk) {
+      const container = document.getElementById("pos-menu-list");
+      if (items.length === 0) {
+        container.innerHTML = `<p class="col-span-3 text-slate-400 text-center py-8">Tidak ada produk ditemukan.</p>`;
+        return;
+      }
+      container.innerHTML = items.map(p => `
+        <div onclick="addToCart('${p.SKU}')" class="border p-3 rounded-lg flex flex-col justify-between hover:border-amber-500 cursor-pointer transition bg-white shadow-sm hover:shadow">
+          <img src="${p.Foto || 'https://via.placeholder.com/150'}" class="h-24 w-full object-cover rounded-md mb-2">
+          <div>
+            <h4 class="font-bold text-sm text-slate-800">${p.Nama}</h4>
+            <p class="text-xs text-slate-500">${p.Kategori}</p>
+          </div>
+          <div class="mt-2 flex justify-between items-center">
+            <span class="font-bold text-amber-600 text-sm">Rp ${Number(p.HargaJual).toLocaleString()}</span>
+            <span class="text-xs text-slate-400">Stok: ${p.Stok}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterPOSMenu() {
+      const query = document.getElementById("search-pos").value.toLowerCase();
+      const filtered = state.produk.filter(p => 
+        p.Nama.toLowerCase().includes(query) || p.Kategori.toLowerCase().includes(query)
+      );
+      renderPOSMenu(filtered);
+    }
+
+    function addToCart(sku) {
+      const prod = state.produk.find(p => p.SKU === sku);
+      if (!prod) return;
+      
+      const exist = state.cart.find(c => c.sku === sku);
+      if (exist) {
+        if (exist.qty < prod.Stok) {
+          exist.qty += 1;
+        } else {
+          alert(`Stok ${prod.Nama} tidak mencukupi!`);
+        }
+      } else {
+        if (prod.Stok > 0) {
+          state.cart.push({ sku: prod.SKU, nama: prod.Nama, harga: Number(prod.HargaJual), qty: 1 });
+        } else {
+          alert(`Stok ${prod.Nama} habis!`);
+        }
+      }
+      renderCart();
+    }
+
+    function renderCart() {
+      const container = document.getElementById("cart-list");
+      if (state.cart.length === 0) {
+        container.innerHTML = `<p class="text-slate-400 text-sm text-center py-4">Belum ada pesanan terpilih.</p>`;
+        calculateTotal();
+        return;
+      }
+      container.innerHTML = state.cart.map(c => `
+        <div class="flex justify-between items-center text-sm">
+          <div>
+            <div class="font-medium">${c.nama}</div>
+            <div class="text-xs text-slate-400">Rp ${c.harga.toLocaleString()} x ${c.qty}</div>
+          </div>
+          <div class="font-bold">Rp ${(c.harga * c.qty).toLocaleString()}</div>
+        </div>
+      `).join('');
+      calculateTotal();
+    }
+
+    function calculateTotal() {
+      const subtotal = state.cart.reduce((acc, curr) => acc + (curr.harga * curr.qty), 0);
+      const diskon = Number(document.getElementById("input-diskon").value) || 0;
+      const total = Math.max(0, subtotal - diskon);
+      const uang = Number(document.getElementById("uang-diterima").value) || 0;
+      const kembalian = Math.max(0, uang - total);
+
+      document.getElementById("txt-subtotal").innerText = `Rp ${subtotal.toLocaleString()}`;
+      document.getElementById("txt-total").innerText = `Rp ${total.toLocaleString()}`;
+      document.getElementById("txt-kembalian").innerText = `Rp ${kembalian.toLocaleString()}`;
+    }
+
+    function addUang(val) {
+      document.getElementById("uang-diterima").value = val;
+      calculateTotal();
+    }
+
+    function setUangPas() {
+      const subtotal = state.cart.reduce((acc, curr) => acc + (curr.harga * curr.qty), 0);
+      const diskon = Number(document.getElementById("input-diskon").value) || 0;
+      const total = Math.max(0, subtotal - diskon);
+      document.getElementById("uang-diterima").value = total;
+      calculateTotal();
+    }
+
+    async function simpanTransaksi() {
+      if (state.cart.length === 0) {
+        alert("Keranjang belanja masih kosong!");
+        return;
+      }
+
+      const custNama = document.getElementById("cust-nama").value || "Umum";
+      let custWa = document.getElementById("cust-wa").value.trim();
+      const subtotal = state.cart.reduce((acc, curr) => acc + (curr.harga * curr.qty), 0);
+      const diskon = Number(document.getElementById("input-diskon").value) || 0;
+      const total = subtotal - diskon;
+      const uangDiterima = Number(document.getElementById("uang-diterima").value) || 0;
+
+      if (uangDiterima < total && document.getElementById("metode-bayar").value === "Tunai") {
+        alert("Uang yang diterima kurang!");
+        return;
+      }
+
+      const payload = {
+        action: "saveTransaksi",
+        data: {
+          id: "TRX-" + Date.now(),
+          pelanggan: custNama,
+          no_wa: custWa,
+          items: state.cart,
+          subtotal, diskon, total,
+          metode: document.getElementById("metode-bayar").value,
+          uang_diterima: uangDiterima,
+          kembalian: uangDiterima - total
+        }
+      };
+
+      try {
+        await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
+
+        if (custWa) {
+          if (custWa.startsWith("0")) custWa = "62" + custWa.slice(1);
+          const msg = `Halo ${custNama}, Terima kasih telah berbelanja di ${state.pengaturan.nama_kedai || 'Kedai Pasar Segandoel'}.\n\nTotal Transaksi: Rp ${total.toLocaleString()}\nMetode: ${payload.data.metode}\n\nNota digital Anda telah tersimpan.`;
+          window.open(`https://wa.me/${custWa}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        alert("Transaksi Sukses & Data Berhasil Disimpan ke Cloud!");
+        state.cart = [];
+        document.getElementById("cust-nama").value = "";
+        document.getElementById("cust-wa").value = "";
+        document.getElementById("uang-diterima").value = "";
+        document.getElementById("input-diskon").value = "0";
+        renderCart();
+        fetchData();
+      } catch (err) {
+        alert("Gagal menyimpan transaksi: " + err);
+      }
+    }
+
+    function renderKatalogTable() {
+      document.getElementById("table-produk-body").innerHTML = state.produk.map(p => `
+        <tr class="border-b hover:bg-slate-50">
+          <td class="p-3"><img src="${p.Foto || 'https://via.placeholder.com/150'}" class="w-10 h-10 object-cover rounded"></td>
+          <td class="p-3">${p.SKU}</td>
+          <td class="p-3 font-semibold">${p.Nama}</td>
+          <td class="p-3">${p.Kategori}</td>
+          <td class="p-3">Rp ${Number(p.HPP).toLocaleString()}</td>
+          <td class="p-3">Rp ${Number(p.HargaJual).toLocaleString()}</td>
+          <td class="p-3">${p.Stok}</td>
+          <td class="p-3"><span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded">${p.Status}</span></td>
+        </tr>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function renderUserTable() {
+      document.getElementById("table-user-body").innerHTML = state.user.map(u => `
+        <tr class="border-b">
+          <td class="p-3">${u.ID_User}</td>
+          <td class="p-3">${u.Username}</td>
+          <td class="p-3">${u.Nama_Lengkap}</td>
+          <td class="p-3"><span class="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full">${u.Role}</span></td>
+          <td class="p-3">${u.Status}</td>
+        </tr>
+      `).join('');
+    }
+
+    function loadPengaturanUI() {
+      if (state.pengaturan.nama_kedai) {
+        document.getElementById("sidebar-nama-kedai").innerText = state.pengaturan.nama_kedai;
+        document.getElementById("cfg-nama").value = state.pengaturan.nama_kedai;
+        document.getElementById("cfg-slogan").value = state.pengaturan.slogan || "";
+        document.getElementById("cfg-telp").value = state.pengaturan.no_telp || "";
+        document.getElementById("cfg-logo").value = state.pengaturan.logo_url || "";
+        document.getElementById("cfg-alamat").value = state.pengaturan.alamat || "";
+        document.getElementById("cfg-footer").value = state.pengaturan.footer_nota || "";
+      }
+    }
+
+    async function simpanProfilCloud() {
+      const payload = {
+        action: "savePengaturan",
+        data: {
+          nama_kedai: document.getElementById("cfg-nama").value,
+          slogan: document.getElementById("cfg-slogan").value,
+          no_telp: document.getElementById("cfg-telp").value,
+          logo_url: document.getElementById("cfg-logo").value,
+          alamat: document.getElementById("cfg-alamat").value,
+          footer_nota: document.getElementById("cfg-footer").value
+        }
+      };
+      await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
+      alert("Pengaturan Cloud Berhasil Disimpan!");
+      fetchData();
+    }
+
+    function hitungLaporan() {
+      let totalOmzet = 0;
+      let totalHppModal = 0;
+      let proporsiMetode = { Tunai: 0, QRIS: 0, Transfer: 0 };
+
+      state.transaksi.forEach(trx => {
+        const total = Number(trx.Total) || 0;
+        totalOmzet += total;
+        
+        if (trx.Metode_Bayar && proporsiMetode[trx.Metode_Bayar] !== undefined) {
+          proporsiMetode[trx.Metode_Bayar] += total;
+        }
+
+        try {
+          const items = JSON.parse(trx.Items_JSON || "[]");
+          items.forEach(item => {
+            const prod = state.produk.find(p => p.SKU === item.sku);
+            if (prod) {
+              totalHppModal += (Number(prod.HPP) || 0) * Number(item.qty);
+            }
+          });
+        } catch(e) {}
+      });
+
+      const netProfit = totalOmzet - totalHppModal;
+
+      document.getElementById("rep-omzet").innerText = `Rp ${totalOmzet.toLocaleString()}`;
+      document.getElementById("rep-hpp").innerText = `Rp ${totalHppModal.toLocaleString()}`;
+      document.getElementById("rep-net").innerText = `Rp ${netProfit.toLocaleString()}`;
+
+      renderChart(proporsiMetode);
+    }
+
+    function renderChart(dataMetode) {
+      const ctx = document.getElementById('chartBayar').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Tunai', 'QRIS', 'Transfer'],
+          datasets: [{
+            data: [dataMetode.Tunai, dataMetode.QRIS, dataMetode.Transfer],
+            backgroundColor: ['#f59e0b', '#10b981', '#3b82f6']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+  </script>
+</body>
+</html>
